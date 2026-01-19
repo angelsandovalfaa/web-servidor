@@ -12,8 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { getLogs, getLogsByUser } from "@/lib/logger"
-import type { ActionLog } from "@/lib/types"
+import { getLogs, getLogsByUser } from "../lib/logger"
+import type { ActionLog } from "../lib/types"
 import { ClipboardList, LogIn, RotateCcw, UserPlus, ChevronLeft, ChevronRight } from "lucide-react"
 
 const ITEMS_PER_PAGE = 10
@@ -35,12 +35,18 @@ export function ActionLogsTable({
   const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
-    if (filterByUser) {
-      setLogs(getLogsByUser(filterByUser))
-    } else {
-      setLogs(getLogs())
+    const fetchLogs = async () => {
+      if (filterByUser) {
+        // Assuming getLogsByUser is not implemented in API, use getLogs and filter client-side
+        const allLogs = await getLogs()
+        setLogs(allLogs.filter(log => log.username === filterByUser && log.action.includes('restart')))
+      } else {
+        const allLogs = await getLogs()
+        setLogs(allLogs)
+      }
+      setCurrentPage(1)
     }
-    setCurrentPage(1)
+    fetchLogs()
   }, [refreshKey, filterByUser])
 
   const totalPages = Math.ceil(logs.length / ITEMS_PER_PAGE)
@@ -72,29 +78,29 @@ export function ActionLogsTable({
   }
 
   const getActionDisplay = (log: ActionLog) => {
-    switch (log.action) {
-      case "login":
-        return (
-          <div className="flex items-center gap-2">
-            <LogIn className="h-4 w-4 text-emerald-600" />
-            <span>Inicio de sesión</span>
-          </div>
-        )
-      case "restart":
-        return (
-          <div className="flex items-center gap-2">
-            <RotateCcw className="h-4 w-4 text-amber-600" />
-            <span>Reinicio: {log.serverName}</span>
-          </div>
-        )
-      case "user_created":
-        return (
-          <div className="flex items-center gap-2">
-            <UserPlus className="h-4 w-4 text-blue-600" />
-            <span>Usuario creado: {log.createdUser}</span>
-          </div>
-        )
+    if (log.action.includes('logged in')) {
+      return (
+        <div className="flex items-center gap-2">
+          <LogIn className="h-4 w-4 text-emerald-600" />
+          <span>Inicio de sesión</span>
+        </div>
+      )
+    } else if (log.action.includes('restarted server')) {
+      return (
+        <div className="flex items-center gap-2">
+          <RotateCcw className="h-4 w-4 text-amber-600" />
+          <span>Reinicio: {log.serverName}</span>
+        </div>
+      )
+    } else if (log.action.includes('created user')) {
+      return (
+        <div className="flex items-center gap-2">
+          <UserPlus className="h-4 w-4 text-blue-600" />
+          <span>Usuario creado: {log.createdUser}</span>
+        </div>
+      )
     }
+    return <span>{log.action}</span>
   }
 
   return (

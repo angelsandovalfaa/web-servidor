@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { login } from "@/lib/auth"
-import { logLogin } from "@/lib/logger"
+import { login } from "../lib/auth"
+import { logLogin } from "../lib/logger"
 import { Server, Lock, User } from "lucide-react"
 
 export function LoginForm() {
@@ -33,11 +33,11 @@ export function LoginForm() {
     setError("")
     setIsLoading(true)
 
-    const user = login(username, password)
+    const user = await login(username, password)
 
     if (user) {
       // Log the successful login action
-      logLogin(user.username, user.role)
+      await logLogin(user.username, user.role)
       // Redirect to dashboard
       router.push("/dashboard")
     } else {

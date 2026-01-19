@@ -5,20 +5,30 @@
  * Main panel displaying all servers, user management, and action logs
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ServerCard } from "./server-card"
 import { ActionLogsTable } from "./action-logs-table"
 import { CreateUserForm } from "./create-user-form"
 import { UsersList } from "./users-list"
-import { SERVERS } from "@/lib/servers"
-import { isAdmin, getCurrentUser } from "@/lib/auth"
+import { getServers } from "../lib/servers"
+import { isAdmin, getCurrentUser } from "../lib/auth"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import type { Server } from "../lib/types"
 
 export function ServerPanel() {
   // Used to trigger log and user list refresh
   const [refreshKey, setRefreshKey] = useState(0)
+  const [servers, setServers] = useState<Server[]>([])
   const showAdminSection = isAdmin()
   const currentUser = getCurrentUser()
+
+  useEffect(() => {
+    const fetchServers = async () => {
+      const data = await getServers()
+      setServers(data)
+    }
+    fetchServers()
+  }, [refreshKey])
 
   /**
    * Called when a server restart completes or user is created to refresh data
@@ -34,7 +44,7 @@ export function ServerPanel() {
         <h2 className="text-2xl font-semibold mb-4">Servidores</h2>
         <p className="text-muted-foreground mb-6">Gestione y reinicie los servidores del sistema</p>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {SERVERS.map((server) => (
+          {servers.map((server) => (
             <ServerCard key={server.id} server={server} onRestartComplete={handleRefresh} />
           ))}
         </div>

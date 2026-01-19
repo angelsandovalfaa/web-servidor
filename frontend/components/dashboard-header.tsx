@@ -7,7 +7,7 @@
 
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { logout, getCurrentUser } from "@/lib/auth"
+import { logout, getCurrentUser } from "../lib/auth"
 import { Badge } from "@/components/ui/badge"
 import { LogOut, Server, User } from "lucide-react"
 

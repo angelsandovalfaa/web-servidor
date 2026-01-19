@@ -10,10 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmationModal } from "./confirmation-modal"
-import { simulateRestart } from "@/lib/servers"
-import { logRestart } from "@/lib/logger"
-import { getCurrentUser, canRestartServer } from "@/lib/auth"
-import type { Server } from "@/lib/types"
+import { simulateRestart } from "../lib/servers"
+import { logRestart } from "../lib/logger"
+import { getCurrentUser, canRestartServer } from "../lib/auth"
+import type { Server } from "../lib/types"
 import { ServerIcon, RotateCcw, CheckCircle, Lock } from "lucide-react"
 
 interface ServerCardProps {
@@ -44,7 +44,7 @@ export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
       // Simulate the restart process
       await simulateRestart(server.id)
       // Log the restart action for admin tracking
-      logRestart(user.username, user.role, server.name)
+      await logRestart(user.username, user.role, server.name)
       setStatus("online")
       // Notify parent component to refresh logs
       onRestartComplete?.()

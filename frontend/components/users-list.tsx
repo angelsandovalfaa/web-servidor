@@ -9,9 +9,9 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { getNormalUsers, deleteUser } from "@/lib/users"
-import { SERVERS } from "@/lib/servers"
-import type { RegisteredUser } from "@/lib/types"
+import { getUsers, deleteUser } from "../lib/users"
+import { getCurrentUser } from "../lib/auth"
+import type { RegisteredUser, Server } from "../lib/types"
 import { Users, Trash2, ServerIcon } from "lucide-react"
 
 interface UsersListProps {
@@ -20,27 +20,43 @@ interface UsersListProps {
 
 export function UsersList({ refreshKey }: UsersListProps) {
   const [users, setUsers] = useState<RegisteredUser[]>([])
+  const [servers, setServers] = useState<Server[]>([])
+  const currentUser = getCurrentUser()
 
   useEffect(() => {
-    setUsers(getNormalUsers())
+    const fetchData = async () => {
+      const userData = await getUsers()
+      setUsers(userData)
+      const serverData = await getServers()
+      setServers(serverData)
+    }
+    fetchData()
   }, [refreshKey])
 
   /**
    * Gets server name by ID
    */
   const getServerName = (serverId: string): string => {
-    return SERVERS.find((s) => s.id === serverId)?.name || serverId
+    return servers.find((s) => s.id === serverId)?.name || serverId
   }
 
   /**
    * Handles user deletion
    */
-  const handleDelete = (username: string) => {
+  const handleDelete = async (id: number, username: string) => {
+    console.log('handleDelete called with id:', id, 'username:', username);
     if (confirm(`¿Está seguro de eliminar al usuario "${username}"?`)) {
-      deleteUser(username)
-      setUsers(getNormalUsers())
-    }
-  }
+      console.log('Confirmed, deleting');
+      const success = await deleteUser(id);
+      console.log('Delete success:', success);
+      if (success) {
+        console.log('Updating users list');
+        setUsers(await getUsers());
+      }
+     } else {
+       console.log('Delete canceled');
+     }
+   }
 
   return (
     <Card>
@@ -62,9 +78,12 @@ export function UsersList({ refreshKey }: UsersListProps) {
           <div className="space-y-3">
             {users.map((user) => (
               <div key={user.username} className="flex items-start justify-between p-3 rounded-lg border bg-card">
-                <div className="space-y-1">
-                  <p className="font-medium">{user.username}</p>
-                  <div className="flex flex-wrap gap-1">
+                 <div className="space-y-1">
+                   <div className="flex items-center gap-2">
+                     <p className="font-medium">{user.username}</p>
+                     <Badge variant="outline">{user.role === "admin" ? "Administrador" : "Usuario"}</Badge>
+                   </div>
+                   <div className="flex flex-wrap gap-1">
                     {user.allowedServers.map((serverId) => (
                       <Badge key={serverId} variant="secondary" className="text-xs">
                         <ServerIcon className="mr-1 h-3 w-3" />
@@ -73,12 +92,13 @@ export function UsersList({ refreshKey }: UsersListProps) {
                     ))}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDelete(user.username)}
-                >
+                 <Button
+                   variant="ghost"
+                   size="icon"
+                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                   disabled={user.username === currentUser?.username}
+                   onClick={() => handleDelete(user.id, user.username)}
+                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

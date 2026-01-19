@@ -7,25 +7,26 @@ import type React from "react"
  * Allows admin to create new users with server permissions
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { createUser } from "@/lib/users"
-import { logUserCreated } from "@/lib/logger"
-import { getCurrentUser } from "@/lib/auth"
-import { SERVERS } from "@/lib/servers"
+import { createUser } from "../lib/users"
+import { logUserCreated } from "../lib/logger"
+import { getCurrentUser } from "../lib/auth"
+import { getServers } from "../lib/servers"
 import { UserPlus } from "lucide-react"
-import type { UserRole } from "@/lib/types"
+import type { UserRole, Server } from "../lib/types"
 
 interface CreateUserFormProps {
   onUserCreated?: () => void
 }
 
 export function CreateUserForm({ onUserCreated }: CreateUserFormProps) {
+  const [servers, setServers] = useState<Server[]>([])
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState<UserRole>("user")
@@ -33,6 +34,14 @@ export function CreateUserForm({ onUserCreated }: CreateUserFormProps) {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const fetchServers = async () => {
+      const data = await getServers()
+      setServers(data)
+    }
+    fetchServers()
+  }, [])
 
   /**
    * Handles server checkbox toggle
@@ -48,7 +57,7 @@ export function CreateUserForm({ onUserCreated }: CreateUserFormProps) {
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole)
     if (newRole === "admin") {
-      setSelectedServers(SERVERS.map((s) => s.id))
+      setSelectedServers(servers.map((s) => s.id))
     }
   }
 
@@ -72,9 +81,9 @@ export function CreateUserForm({ onUserCreated }: CreateUserFormProps) {
 
     setIsLoading(true)
 
-    const allowedServers = role === "admin" ? SERVERS.map((s) => s.id) : selectedServers
+    const allowedServers = role === "admin" ? servers.map((s) => s.id) : selectedServers
 
-    const created = createUser({
+    const created = await createUser({
       username: username.trim(),
       password: password.trim(),
       role: role,
@@ -84,7 +93,7 @@ export function CreateUserForm({ onUserCreated }: CreateUserFormProps) {
     if (created) {
       const admin = getCurrentUser()
       if (admin) {
-        logUserCreated(admin.username, username.trim())
+        await logUserCreated(admin.username, username.trim())
       }
       const roleLabel = role === "admin" ? "administrador" : "normal"
       setSuccess(`Usuario ${roleLabel} "${username}" creado exitosamente`)
@@ -167,7 +176,7 @@ export function CreateUserForm({ onUserCreated }: CreateUserFormProps) {
                 Seleccione los servidores que este usuario podrá reiniciar
               </p>
               <div className="space-y-2">
-                {SERVERS.map((server) => (
+                {servers.map((server) => (
                   <div key={server.id} className="flex items-center space-x-2">
                     <Checkbox
                       id={`server-${server.id}`}

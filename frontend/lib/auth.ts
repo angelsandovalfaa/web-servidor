@@ -5,32 +5,39 @@
  */
 
 import type { User } from "./types"
-import { validateUser } from "./users"
 
 const USER_STORAGE_KEY = "server_manager_user"
 
 /**
- * Validates user credentials and logs them in
+ * Validates user credentials and logs them in via API
  * @param username - The username entered by the user
  * @param password - The password entered by the user
  * @returns The logged in user or null if validation fails
  */
-export function login(username: string, password: string): User | null {
-  const registeredUser = validateUser(username, password)
-
-  if (registeredUser) {
-    const user: User = {
-      username: registeredUser.username,
-      role: registeredUser.role,
-      allowedServers: registeredUser.allowedServers,
+export async function login(username: string, password: string): Promise<User | null> {
+  try {
+    const response = await fetch('http://localhost:3001/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      const user: User = {
+        username: data.user.username,
+        role: data.user.role,
+        allowedServers: data.user.allowedServers,
+      };
+      // Store user in localStorage for session persistence
+      if (typeof window !== "undefined") {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+      }
+      return user;
     }
-    // Store user in localStorage for session persistence
-    if (typeof window !== "undefined") {
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
-    }
-    return user
+  } catch (error) {
+    console.error('Login error:', error);
   }
-  return null
+  return null;
 }
 
 /**
