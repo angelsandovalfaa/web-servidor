@@ -96,3 +96,17 @@ export function canRestartServer(serverId: string): boolean {
   // Normal users check their allowed servers
   return user.allowedServers?.includes(serverId) || false
 }
+
+/**
+ * Checks if current user can shutdown a specific server
+ * @param serverId - The server ID to check
+ * @returns True if user has permission
+ */
+export function canShutdownServer(serverId: string): boolean {
+  const user = getCurrentUser()
+  if (!user) return false
+  // Admin can shutdown all servers
+  if (user.role === "admin") return true
+  // Normal users check their allowed servers
+  return user.allowedServers?.includes(serverId) || false
+}

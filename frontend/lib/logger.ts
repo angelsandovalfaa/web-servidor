@@ -40,6 +40,13 @@ export async function getLogs(): Promise<ActionLog[]> {
             userRole = match[2] as 'user' | 'admin';
             serverName = match[3];
           }
+        } else if (log.action.includes('apagó el servidor')) {
+          const match = log.action.match(/El usuario (\w+) \((user|admin)\) apagó el servidor (.+)/);
+          if (match) {
+            username = match[1];
+            userRole = match[2] as 'user' | 'admin';
+            serverName = match[3];
+          }
         } else if (log.action.includes('created user')) {
           const match = log.action.match(/Admin (\w+) created user (\w+)/);
           if (match) {
@@ -108,6 +115,26 @@ export async function logRestart(username: string, userRole: UserRole, serverNam
     console.log('Log response:', response.ok);
   } catch (error) {
     console.error('Error logging restart:', error);
+  }
+}
+
+/**
+ * Records a server shutdown action via API
+ * @param username - The user who performed the shutdown
+ * @param userRole - The role of the user
+ * @param serverName - The name of the shutdown server
+ */
+export async function logShutdown(username: string, userRole: UserRole, serverName: string): Promise<void> {
+  console.log('Logging shutdown:', username, userRole, serverName);
+  try {
+    const response = await fetch('http://localhost:3001/api/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: `El usuario ${username} (${userRole}) apagó el servidor ${serverName}` }),
+    });
+    console.log('Log response:', response.ok);
+  } catch (error) {
+    console.error('Error logging shutdown:', error);
   }
 }
 

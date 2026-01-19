@@ -10,11 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmationModal } from "./confirmation-modal"
-import { simulateRestart } from "../lib/servers"
-import { logRestart } from "../lib/logger"
-import { getCurrentUser, canRestartServer } from "../lib/auth"
+import { ShutdownModal } from "./shutdown-modal"
+import { simulateRestart, simulateStop } from "../lib/servers"
+import { logRestart, logShutdown } from "../lib/logger"
+import { getCurrentUser, canRestartServer, canShutdownServer } from "../lib/auth"
 import type { Server } from "../lib/types"
-import { ServerIcon, RotateCcw, CheckCircle, Lock } from "lucide-react"
+import { ServerIcon, RotateCcw, CheckCircle, Lock, PowerOff } from "lucide-react"
 
 interface ServerCardProps {
   server: Server
@@ -23,10 +24,13 @@ interface ServerCardProps {
 
 export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isShutdownModalOpen, setIsShutdownModalOpen] = useState(false)
   const [isRestarting, setIsRestarting] = useState(false)
+  const [isStopping, setIsStopping] = useState(false)
   const [status, setStatus] = useState<Server["status"]>(server.status)
 
   const canRestart = canRestartServer(server.id)
+  const canShutdown = canShutdownServer(server.id)
 
   /**
    * Handles the server restart process
@@ -53,6 +57,34 @@ export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
       setStatus("offline")
     } finally {
       setIsRestarting(false)
+    }
+  }
+
+  /**
+   * Handles the server shutdown process
+   * Shows modal for confirmation, then simulates shutdown
+   */
+  const handleShutdown = async () => {
+    const user = getCurrentUser()
+    if (!user) return
+
+    setIsStopping(true)
+    setStatus("restarting") // Using restarting status for stopping as well
+    setIsShutdownModalOpen(false)
+
+    try {
+      // Simulate the shutdown process
+      await simulateStop(server.id)
+      // Log the shutdown action for admin tracking
+      await logShutdown(user.username, user.role, server.name)
+      setStatus("offline")
+      // Notify parent component to refresh logs
+      onRestartComplete?.()
+    } catch (error) {
+      console.error("Shutdown failed:", error)
+      setStatus("offline")
+    } finally {
+      setIsStopping(false)
     }
   }
 
@@ -97,17 +129,30 @@ export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
         <CardContent>
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">ID: {server.id}</p>
-            {canRestart ? (
-              <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)} disabled={isRestarting}>
-                <RotateCcw className={`mr-2 h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
-                Reiniciar Servidor
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" disabled className="opacity-50 bg-transparent">
-                <Lock className="mr-2 h-4 w-4" />
-                Sin Permiso
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {canRestart ? (
+                <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)} disabled={isRestarting || isStopping}>
+                  <RotateCcw className={`mr-2 h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
+                  Reiniciar
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" disabled className="opacity-50 bg-transparent">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Reiniciar
+                </Button>
+              )}
+              {canShutdown ? (
+                <Button variant="destructive" size="sm" onClick={() => setIsShutdownModalOpen(true)} disabled={isRestarting || isStopping}>
+                  <PowerOff className={`mr-2 h-4 w-4 ${isStopping ? "animate-spin" : ""}`} />
+                  Apagar
+                </Button>
+              ) : (
+                <Button variant="destructive" size="sm" disabled className="opacity-50">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Apagar
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -120,6 +165,16 @@ export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
         title={`¿Reiniciar ${server.name}?`}
         description="Esta acción reiniciará el servidor. Los servicios pueden no estar disponibles temporalmente durante el proceso."
         isLoading={isRestarting}
+      />
+
+      {/* Shutdown Modal */}
+      <ShutdownModal
+        isOpen={isShutdownModalOpen}
+        onClose={() => setIsShutdownModalOpen(false)}
+        onConfirm={handleShutdown}
+        title={`¿Apagar ${server.name}?`}
+        description="Esta acción apagará el servidor. El servidor quedará fuera de línea hasta que se reinicie manualmente."
+        isLoading={isStopping}
       />
     </>
   )

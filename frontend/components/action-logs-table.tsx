@@ -39,7 +39,7 @@ export function ActionLogsTable({
       if (filterByUser) {
         // Assuming getLogsByUser is not implemented in API, use getLogs and filter client-side
         const allLogs = await getLogs()
-        setLogs(allLogs.filter(log => log.username === filterByUser && log.action.includes('restart')))
+        setLogs(allLogs.filter(log => log.username === filterByUser && (log.action.includes('restart') || log.action.includes('apagó el servidor'))))
       } else {
         const allLogs = await getLogs()
         setLogs(allLogs)
@@ -90,6 +90,13 @@ export function ActionLogsTable({
         <div className="flex items-center gap-2">
           <RotateCcw className="h-4 w-4 text-amber-600" />
           <span>Reinicio: {log.serverName}</span>
+        </div>
+      )
+    } else if (log.action.includes('stopped server') || log.action.includes('apagó el servidor')) {
+      return (
+        <div className="flex items-center gap-2">
+          <RotateCcw className="h-4 w-4 text-red-600" />
+          <span>Apagado: {log.serverName}</span>
         </div>
       )
     } else if (log.action.includes('created user')) {

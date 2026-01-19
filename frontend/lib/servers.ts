@@ -37,3 +37,21 @@ export async function simulateRestart(serverId: string): Promise<void> {
     console.error('Error restarting server:', error);
   }
 }
+
+/**
+ * Stops a server via API
+ * @param serverId - The ID of the server to stop
+ * @returns Promise that resolves when stop completes
+ */
+export async function simulateStop(serverId: string): Promise<void> {
+  try {
+    const response = await fetch(`http://localhost:3001/api/servers/${serverId}/stop`, {
+      method: 'POST',
+    });
+    if (response.ok) {
+      console.log(`Server ${serverId} stop initiated`);
+    }
+  } catch (error) {
+    console.error('Error stopping server:', error);
+  }
+}

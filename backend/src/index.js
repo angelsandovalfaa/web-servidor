@@ -136,6 +136,14 @@ app.post('/api/servers/:id/restart', (req, res) => {
   }, 2000);
 });
 
+app.post('/api/servers/:id/stop', (req, res) => {
+  const { id } = req.params;
+  // Simulate stop
+  setTimeout(() => {
+    res.json({ message: `Server ${id} stopped` });
+  }, 1000);
+});
+
 app.post('/api/logs', (req, res) => {
   const { action } = req.body;
   console.log('POST /api/logs action:', action);
