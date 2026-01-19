@@ -2,6 +2,9 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const path = require('path');
+const axios = require('axios');
+const { Client } = require('ssh2');
+require('dotenv').config();
 const app = express();
 const port = 3001;
 
@@ -32,8 +35,16 @@ db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS servers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE,
+    ip TEXT,
+    username TEXT,
+    password TEXT,
     status TEXT DEFAULT 'stopped'
   )`);
+
+  // Add columns if not exist
+  db.run(`ALTER TABLE servers ADD COLUMN ip TEXT`, (err) => { if (err && !err.message.includes('duplicate column')) console.error(err); });
+  db.run(`ALTER TABLE servers ADD COLUMN username TEXT`, (err) => { if (err && !err.message.includes('duplicate column')) console.error(err); });
+  db.run(`ALTER TABLE servers ADD COLUMN password TEXT`, (err) => { if (err && !err.message.includes('duplicate column')) console.error(err); });
 
   db.run(`CREATE TABLE IF NOT EXISTS logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,16 +61,8 @@ db.serialize(() => {
     }
   });
 
-  // Insert default servers
-  const servers = [
-    { name: 'Servidor de Producción' },
-    { name: 'Servidor de Desarrollo' },
-    { name: 'Servidor de Pruebas' },
-    { name: 'Servidor de Backup' }
-  ];
-  servers.forEach(server => {
-    db.run(`INSERT INTO servers (name) VALUES (?) ON CONFLICT(name) DO NOTHING`, [server.name]);
-  });
+   // Insert real server
+   db.run(`INSERT INTO servers (name) VALUES (?) ON CONFLICT(name) DO NOTHING`, ['Servidor Real - 192.168.0.111']);
 });
 
 // Routes
@@ -121,27 +124,102 @@ app.get('/api/servers', (req, res) => {
 });
 
 app.post('/api/servers', (req, res) => {
-  const { name } = req.body;
-  db.run('INSERT INTO servers (name) VALUES (?)', [name], function(err) {
+  const { name, ip, username, password, adminUsername, adminPassword } = req.body;
+  // Verify admin
+  db.get('SELECT role FROM users WHERE username = ? AND password = ?', [adminUsername, adminPassword], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json({ id: this.lastID });
+    if (!row || row.role !== 'admin') return res.status(403).json({ error: 'Only administrators can add servers' });
+    db.run('INSERT INTO servers (name, ip, username, password) VALUES (?, ?, ?, ?)', [name, ip, username, password], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ id: this.lastID });
+    });
   });
 });
 
 app.post('/api/servers/:id/restart', (req, res) => {
   const { id } = req.params;
-  // Simulate restart
-  setTimeout(() => {
-    res.json({ message: `Server ${id} restarted` });
-  }, 2000);
+  console.log('Attempting to restart server:', id);
+  db.get('SELECT ip, username, password FROM servers WHERE id = ?', [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Server not found' });
+    const { ip, username, password } = row;
+    const conn = new Client();
+    conn.connect({
+      host: ip,
+      port: 22,
+      username: username,
+      password: password
+    });
+    conn.on('error', (err) => {
+      console.error('SSH connection error:', err);
+      res.status(500).json({ error: 'SSH connection failed: ' + err.message });
+    });
+    conn.on('ready', () => {
+      console.log('SSH Client :: ready');
+      conn.exec('sudo reboot', (err, stream) => {
+        if (err) {
+          console.error('SSH exec error:', err);
+          res.status(500).json({ error: err.message });
+          conn.end();
+          return;
+        }
+        let stdout = '';
+        stream.on('close', (code, signal) => {
+          console.log('SSH stream closed, code:', code, 'signal:', signal);
+          res.json({ message: `Server ${id} restarted`, output: stdout });
+          conn.end();
+        }).on('data', (data) => {
+          console.log('STDOUT: ' + data);
+          stdout += data;
+        }).stderr.on('data', (data) => {
+          console.log('STDERR: ' + data);
+        });
+      });
+    });
+  });
 });
 
 app.post('/api/servers/:id/stop', (req, res) => {
   const { id } = req.params;
-  // Simulate stop
-  setTimeout(() => {
-    res.json({ message: `Server ${id} stopped` });
-  }, 1000);
+  console.log('Attempting to stop server:', id);
+  db.get('SELECT ip, username, password FROM servers WHERE id = ?', [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Server not found' });
+    const { ip, username, password } = row;
+    const conn = new Client();
+    conn.connect({
+      host: ip,
+      port: 22,
+      username: username,
+      password: password
+    });
+    conn.on('error', (err) => {
+      console.error('SSH connection error:', err);
+      res.status(500).json({ error: 'SSH connection failed: ' + err.message });
+    });
+    conn.on('ready', () => {
+      console.log('SSH Client :: ready');
+      conn.exec('sudo poweroff', (err, stream) => {
+        if (err) {
+          console.error('SSH exec error:', err);
+          res.status(500).json({ error: err.message });
+          conn.end();
+          return;
+        }
+        let stdout = '';
+        stream.on('close', (code, signal) => {
+          console.log('SSH stream closed, code:', code, 'signal:', signal);
+          res.json({ message: `Server ${id} stopped`, output: stdout });
+          conn.end();
+        }).on('data', (data) => {
+          console.log('STDOUT: ' + data);
+          stdout += data;
+        }).stderr.on('data', (data) => {
+          console.log('STDERR: ' + data);
+        });
+      });
+    });
+  });
 });
 
 app.post('/api/logs', (req, res) => {
@@ -161,6 +239,14 @@ app.get('/api/logs', (req, res) => {
   db.all('SELECT * FROM logs ORDER BY timestamp DESC', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
+  });
+});
+
+app.get('/api/test', (req, res) => {
+  res.json({
+    SERVER_IP: process.env.SERVER_IP,
+    SERVER_USER: process.env.SERVER_USER,
+    SERVER_PASS_SET: !!process.env.SERVER_PASS
   });
 });
 
