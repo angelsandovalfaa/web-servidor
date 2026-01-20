@@ -54,6 +54,20 @@ export async function getLogs(): Promise<ActionLog[]> {
             userRole = 'admin';
             createdUser = match[2];
           }
+        } else if (log.action.includes('added server')) {
+          const match = log.action.match(/Admin (\w+) added server (.+)/);
+          if (match) {
+            username = match[1];
+            userRole = 'admin';
+            serverName = match[2];
+          }
+        } else if (log.action.includes('deleted server')) {
+          const match = log.action.match(/Admin (\w+) deleted server (.+)/);
+          if (match) {
+            username = match[1];
+            userRole = 'admin';
+            serverName = match[2];
+          }
         }
         return {
           ...log,
@@ -152,6 +166,40 @@ export async function logUserCreated(adminUsername: string, createdUsername: str
     });
   } catch (error) {
     console.error('Error logging user creation:', error);
+  }
+}
+
+/**
+ * Records a server addition action via API
+ * @param adminUsername - The admin who added the server
+ * @param serverName - The name of the added server
+ */
+export async function logServerAdded(adminUsername: string, serverName: string): Promise<void> {
+  try {
+    await fetch('http://localhost:3001/api/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: `Admin ${adminUsername} added server ${serverName}` }),
+    });
+  } catch (error) {
+    console.error('Error logging server addition:', error);
+  }
+}
+
+/**
+ * Records a server deletion action via API
+ * @param adminUsername - The admin who deleted the server
+ * @param serverName - The name of the deleted server
+ */
+export async function logServerDeleted(adminUsername: string, serverName: string): Promise<void> {
+  try {
+    await fetch('http://localhost:3001/api/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: `Admin ${adminUsername} deleted server ${serverName}` }),
+    });
+  } catch (error) {
+    console.error('Error logging server deletion:', error);
   }
 }
 

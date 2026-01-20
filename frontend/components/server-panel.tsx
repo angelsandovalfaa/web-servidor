@@ -9,6 +9,7 @@ import { useState, useEffect } from "react"
 import { ServerCard } from "./server-card"
 import { ActionLogsTable } from "./action-logs-table"
 import { CreateUserForm } from "./create-user-form"
+import { CreateServerForm } from "./create-server-form"
 import { UsersList } from "./users-list"
 import { getServers } from "../lib/servers"
 import { isAdmin, getCurrentUser } from "../lib/auth"
@@ -45,7 +46,7 @@ export function ServerPanel() {
         <p className="text-muted-foreground mb-6">Gestione y reinicie los servidores del sistema</p>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {servers.map((server) => (
-            <ServerCard key={server.id} server={server} onRestartComplete={handleRefresh} />
+            <ServerCard key={server.id} server={server} onRestartComplete={handleRefresh} onDelete={handleRefresh} />
           ))}
         </div>
       </div>
@@ -68,6 +69,7 @@ export function ServerPanel() {
             <TabsList className="mb-4">
               <TabsTrigger value="logs">Registro de Acciones</TabsTrigger>
               <TabsTrigger value="users">Gestión de Usuarios</TabsTrigger>
+              <TabsTrigger value="servers">Gestión de Servidores</TabsTrigger>
             </TabsList>
 
             <TabsContent value="logs">
@@ -79,6 +81,10 @@ export function ServerPanel() {
                 <CreateUserForm onUserCreated={handleRefresh} />
                 <UsersList refreshKey={refreshKey} />
               </div>
+            </TabsContent>
+
+            <TabsContent value="servers">
+              <CreateServerForm onServerCreated={handleRefresh} />
             </TabsContent>
           </Tabs>
         </div>

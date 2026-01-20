@@ -1,3 +1,6 @@
+
+
+
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
@@ -124,14 +127,28 @@ app.get('/api/servers', (req, res) => {
 });
 
 app.post('/api/servers', (req, res) => {
-  const { name, ip, username, password, adminUsername, adminPassword } = req.body;
+  const { name, ip, username, password, adminUsername } = req.body;
   // Verify admin
-  db.get('SELECT role FROM users WHERE username = ? AND password = ?', [adminUsername, adminPassword], (err, row) => {
+  db.get('SELECT role FROM users WHERE username = ?', [adminUsername], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row || row.role !== 'admin') return res.status(403).json({ error: 'Only administrators can add servers' });
     db.run('INSERT INTO servers (name, ip, username, password) VALUES (?, ?, ?, ?)', [name, ip, username, password], function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ id: this.lastID });
+    });
+  });
+});
+
+app.delete('/api/servers/:id', (req, res) => {
+  const { id } = req.params;
+  const { adminUsername } = req.body;
+  // Verify admin
+  db.get('SELECT role FROM users WHERE username = ?', [adminUsername], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row || row.role !== 'admin') return res.status(403).json({ error: 'Only administrators can delete servers' });
+    db.run('DELETE FROM servers WHERE id = ?', [id], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ deleted: this.changes });
     });
   });
 });
@@ -156,7 +173,7 @@ app.post('/api/servers/:id/restart', (req, res) => {
     });
     conn.on('ready', () => {
       console.log('SSH Client :: ready');
-      conn.exec('sudo reboot', (err, stream) => {
+      conn.exec(`echo "${password}" | sudo -S reboot`, (err, stream) => {
         if (err) {
           console.error('SSH exec error:', err);
           res.status(500).json({ error: err.message });
@@ -199,7 +216,7 @@ app.post('/api/servers/:id/stop', (req, res) => {
     });
     conn.on('ready', () => {
       console.log('SSH Client :: ready');
-      conn.exec('sudo poweroff', (err, stream) => {
+      conn.exec(`echo "${password}" | sudo -S poweroff`, (err, stream) => {
         if (err) {
           console.error('SSH exec error:', err);
           res.status(500).json({ error: err.message });

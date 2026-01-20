@@ -11,22 +11,25 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmationModal } from "./confirmation-modal"
 import { ShutdownModal } from "./shutdown-modal"
-import { simulateRestart, simulateStop } from "../lib/servers"
-import { logRestart, logShutdown } from "../lib/logger"
-import { getCurrentUser, canRestartServer, canShutdownServer } from "../lib/auth"
+import { simulateRestart, simulateStop, deleteServer } from "../lib/servers"
+import { logRestart, logShutdown, logServerDeleted } from "../lib/logger"
+import { getCurrentUser, canRestartServer, canShutdownServer, isAdmin } from "../lib/auth"
 import type { Server } from "../lib/types"
-import { ServerIcon, RotateCcw, CheckCircle, Lock, PowerOff } from "lucide-react"
+import { ServerIcon, RotateCcw, CheckCircle, Lock, PowerOff, Trash2 } from "lucide-react"
 
 interface ServerCardProps {
   server: Server
   onRestartComplete?: () => void
+  onDelete?: () => void
 }
 
-export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
+export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isShutdownModalOpen, setIsShutdownModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isRestarting, setIsRestarting] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [status, setStatus] = useState<Server["status"]>(server.status)
 
   const canRestart = canRestartServer(server.id)
@@ -54,7 +57,7 @@ export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
       onRestartComplete?.()
     } catch (error) {
       console.error("Restart failed:", error)
-      setStatus("offline")
+      setStatus("stopped") // Keep as stopped if restart fails
     } finally {
       setIsRestarting(false)
     }
@@ -77,7 +80,7 @@ export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
       await simulateStop(server.id)
       // Log the shutdown action for admin tracking
       await logShutdown(user.username, user.role, server.name)
-      setStatus("offline")
+      setStatus("stopped")
       // Notify parent component to refresh logs
       onRestartComplete?.()
     } catch (error) {
@@ -85,6 +88,32 @@ export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
       setStatus("offline")
     } finally {
       setIsStopping(false)
+    }
+  }
+
+  /**
+   * Handles the server deletion process
+   * Shows modal for confirmation, then deletes the server
+   */
+  const handleDelete = async () => {
+    const user = getCurrentUser()
+    if (!user || !isAdmin()) return
+
+    setIsDeleting(true)
+    setIsDeleteModalOpen(false)
+
+    try {
+      const deleted = await deleteServer(server.id, user.username)
+      if (deleted) {
+        await logServerDeleted(user.username, server.name)
+        onDelete?.()
+      } else {
+        console.error("Delete failed")
+      }
+    } catch (error) {
+      console.error("Delete failed:", error)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -105,6 +134,13 @@ export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
           <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
             <RotateCcw className="mr-1 h-3 w-3 animate-spin" />
             Reiniciando
+          </Badge>
+        )
+      case "stopped":
+        return (
+          <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+            <PowerOff className="mr-1 h-3 w-3" />
+            Apagado
           </Badge>
         )
       case "offline":
@@ -131,7 +167,7 @@ export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
             <p className="text-sm text-muted-foreground">ID: {server.id}</p>
             <div className="flex gap-2">
               {canRestart ? (
-                <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)} disabled={isRestarting || isStopping}>
+                <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)} disabled={isRestarting || isStopping || status === "stopped"}>
                   <RotateCcw className={`mr-2 h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
                   Reiniciar
                 </Button>
@@ -141,18 +177,24 @@ export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
                   Reiniciar
                 </Button>
               )}
-              {canShutdown ? (
-                <Button variant="destructive" size="sm" onClick={() => setIsShutdownModalOpen(true)} disabled={isRestarting || isStopping}>
-                  <PowerOff className={`mr-2 h-4 w-4 ${isStopping ? "animate-spin" : ""}`} />
-                  Apagar
-                </Button>
-              ) : (
-                <Button variant="destructive" size="sm" disabled className="opacity-50">
-                  <Lock className="mr-2 h-4 w-4" />
-                  Apagar
-                </Button>
-              )}
-            </div>
+               {canShutdown ? (
+                 <Button variant="destructive" size="sm" onClick={() => setIsShutdownModalOpen(true)} disabled={isRestarting || isStopping || isDeleting}>
+                   <PowerOff className={`mr-2 h-4 w-4 ${isStopping ? "animate-spin" : ""}`} />
+                   Apagar
+                 </Button>
+               ) : (
+                 <Button variant="destructive" size="sm" disabled className="opacity-50">
+                   <Lock className="mr-2 h-4 w-4" />
+                   Apagar
+                 </Button>
+               )}
+               {isAdmin() && (
+                 <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(true)} disabled={isRestarting || isStopping || isDeleting} className="text-red-600 hover:text-red-700">
+                   <Trash2 className="mr-2 h-4 w-4" />
+                   Eliminar
+                 </Button>
+               )}
+             </div>
           </div>
         </CardContent>
       </Card>
@@ -175,6 +217,16 @@ export function ServerCard({ server, onRestartComplete }: ServerCardProps) {
         title={`¿Apagar ${server.name}?`}
         description="Esta acción apagará el servidor. El servidor quedará fuera de línea hasta que se reinicie manualmente."
         isLoading={isStopping}
+      />
+
+      {/* Delete Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title={`¿Eliminar ${server.name}?`}
+        description="Esta acción eliminará permanentemente el servidor del sistema. Esta acción no se puede deshacer."
+        isLoading={isDeleting}
       />
     </>
   )
