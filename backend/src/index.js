@@ -7,6 +7,7 @@ const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
 const { Client } = require('ssh2');
+const { exec } = require('child_process');
 require('dotenv').config();
 const app = express();
 const port = 3001;
@@ -149,6 +150,23 @@ app.delete('/api/servers/:id', (req, res) => {
     db.run('DELETE FROM servers WHERE id = ?', [id], function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ deleted: this.changes });
+    });
+  });
+});
+
+app.post('/api/servers/:id/check', (req, res) => {
+  const { id } = req.params;
+  db.get('SELECT ip FROM servers WHERE id = ?', [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Server not found' });
+    const ip = row.ip;
+    exec(`ping -c 1 ${ip}`, (error, stdout, stderr) => {
+      const isOnline = !error;
+      const newStatus = isOnline ? 'online' : 'offline';
+      db.run('UPDATE servers SET status = ? WHERE id = ?', [newStatus, id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ status: newStatus });
+      });
     });
   });
 });

@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmationModal } from "./confirmation-modal"
 import { ShutdownModal } from "./shutdown-modal"
-import { simulateRestart, simulateStop, deleteServer } from "../lib/servers"
+import { simulateRestart, simulateStop, deleteServer, pingServer } from "../lib/servers"
 import { logRestart, logShutdown, logServerDeleted } from "../lib/logger"
 import { getCurrentUser, canRestartServer, canShutdownServer, isAdmin } from "../lib/auth"
 import type { Server } from "../lib/types"
-import { ServerIcon, RotateCcw, CheckCircle, Lock, PowerOff, Trash2 } from "lucide-react"
+import { ServerIcon, RotateCcw, CheckCircle, Lock, PowerOff, Trash2, RefreshCw } from "lucide-react"
 
 interface ServerCardProps {
   server: Server
@@ -30,6 +30,7 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
   const [isRestarting, setIsRestarting] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isChecking, setIsChecking] = useState(false)
   const [status, setStatus] = useState<Server["status"]>(server.status)
 
   const canRestart = canRestartServer(server.id)
@@ -118,6 +119,22 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
   }
 
   /**
+   * Handles checking server status by pinging
+   */
+  const handleCheckStatus = async () => {
+    setIsChecking(true)
+    try {
+      const newStatus = await pingServer(server.id)
+      setStatus(newStatus)
+      onRestartComplete?.()
+    } catch (error) {
+      console.error("Check status failed:", error)
+    } finally {
+      setIsChecking(false)
+    }
+  }
+
+  /**
    * Returns the appropriate badge variant based on server status
    */
   const getStatusBadge = () => {
@@ -167,7 +184,7 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
             <p className="text-sm text-muted-foreground">ID: {server.id}</p>
             <div className="flex gap-2">
               {canRestart ? (
-                <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)} disabled={isRestarting || isStopping || status === "stopped"}>
+                <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)} disabled={isRestarting || isStopping || isDeleting || isChecking || status === "stopped"}>
                   <RotateCcw className={`mr-2 h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
                   Reiniciar
                 </Button>
@@ -177,23 +194,27 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
                   Reiniciar
                 </Button>
               )}
-               {canShutdown ? (
-                 <Button variant="destructive" size="sm" onClick={() => setIsShutdownModalOpen(true)} disabled={isRestarting || isStopping || isDeleting}>
-                   <PowerOff className={`mr-2 h-4 w-4 ${isStopping ? "animate-spin" : ""}`} />
-                   Apagar
-                 </Button>
-               ) : (
-                 <Button variant="destructive" size="sm" disabled className="opacity-50">
-                   <Lock className="mr-2 h-4 w-4" />
-                   Apagar
-                 </Button>
-               )}
+              {canShutdown ? (
+                <Button variant="destructive" size="sm" onClick={() => setIsShutdownModalOpen(true)} disabled={isRestarting || isStopping || isDeleting || isChecking}>
+                  <PowerOff className={`mr-2 h-4 w-4 ${isStopping ? "animate-spin" : ""}`} />
+                  Apagar
+                </Button>
+              ) : (
+                <Button variant="destructive" size="sm" disabled className="opacity-50">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Apagar
+                </Button>
+              )}
                {isAdmin() && (
-                 <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(true)} disabled={isRestarting || isStopping || isDeleting} className="text-red-600 hover:text-red-700">
+                 <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(true)} disabled={isRestarting || isStopping || isDeleting || isChecking} className="text-red-600 hover:text-red-700">
                    <Trash2 className="mr-2 h-4 w-4" />
                    Eliminar
                  </Button>
                )}
+               <Button variant="outline" size="sm" onClick={handleCheckStatus} disabled={isRestarting || isStopping || isDeleting || isChecking}>
+                 <RefreshCw className={`mr-2 h-4 w-4 ${isChecking ? "animate-spin" : ""}`} />
+                 Verificar Estado
+               </Button>
              </div>
           </div>
         </CardContent>

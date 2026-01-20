@@ -111,3 +111,25 @@ export async function deleteServer(serverId: string, adminUsername: string): Pro
     return false;
   }
 }
+
+/**
+ * Pings a server and updates its status
+ * @param serverId - The ID of the server to ping
+ * @returns Promise that resolves to the new status
+ */
+export async function pingServer(serverId: string): Promise<string> {
+  try {
+    const response = await fetch(`http://localhost:3001/api/servers/${serverId}/check`, {
+      method: 'POST',
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data.status;
+    } else {
+      throw new Error('Ping failed');
+    }
+  } catch (error) {
+    console.error('Error pinging server:', error);
+    throw error;
+  }
+}
