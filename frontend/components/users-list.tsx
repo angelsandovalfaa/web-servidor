@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getUsers, deleteUser } from "../lib/users"
+import { getServers } from "../lib/servers"
 import { getCurrentUser } from "../lib/auth"
 import type { RegisteredUser, Server } from "../lib/types"
 import { Users, Trash2, ServerIcon } from "lucide-react"

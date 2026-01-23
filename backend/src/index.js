@@ -64,9 +64,6 @@ db.serialize(() => {
       console.log('Admin user inserted or already exists');
     }
   });
-
-   // Insert real server
-   db.run(`INSERT INTO servers (name) VALUES (?) ON CONFLICT(name) DO NOTHING`, ['Servidor Real - 192.168.0.111']);
 });
 
 // Routes

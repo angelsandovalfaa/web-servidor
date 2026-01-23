@@ -35,6 +35,12 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
 
   const canRestart = canRestartServer(server.id)
   const canShutdown = canShutdownServer(server.id)
+  const isOffline = status === "offline"
+  const isBusy = isRestarting || isStopping || isDeleting || isChecking
+  const restartDisabled = isBusy || status === "stopped" || isOffline
+  const shutdownDisabled = isBusy || status === "stopped" || isOffline
+  const deleteDisabled = isBusy
+  const checkDisabled = isBusy
 
   /**
    * Handles the server restart process
@@ -43,6 +49,7 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
   const handleRestart = async () => {
     const user = getCurrentUser()
     if (!user) return
+    if (status === "offline") return
 
     setIsRestarting(true)
     setStatus("restarting")
@@ -71,6 +78,7 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
   const handleShutdown = async () => {
     const user = getCurrentUser()
     if (!user) return
+    if (status === "offline") return
 
     setIsStopping(true)
     setStatus("restarting") // Using restarting status for stopping as well
@@ -180,11 +188,13 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">ID: {server.id}</p>
-            <div className="flex gap-2">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">ID: {server.id}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end">
               {canRestart ? (
-                <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)} disabled={isRestarting || isStopping || isDeleting || isChecking || status === "stopped"}>
+                <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)} disabled={restartDisabled}>
                   <RotateCcw className={`mr-2 h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
                   Reiniciar
                 </Button>
@@ -195,7 +205,7 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
                 </Button>
               )}
               {canShutdown ? (
-                <Button variant="destructive" size="sm" onClick={() => setIsShutdownModalOpen(true)} disabled={isRestarting || isStopping || isDeleting || isChecking}>
+                <Button variant="destructive" size="sm" onClick={() => setIsShutdownModalOpen(true)} disabled={shutdownDisabled}>
                   <PowerOff className={`mr-2 h-4 w-4 ${isStopping ? "animate-spin" : ""}`} />
                   Apagar
                 </Button>
@@ -206,12 +216,12 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
                 </Button>
               )}
                {isAdmin() && (
-                 <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(true)} disabled={isRestarting || isStopping || isDeleting || isChecking} className="text-red-600 hover:text-red-700">
+                 <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(true)} disabled={deleteDisabled} className="text-red-600 hover:text-red-700">
                    <Trash2 className="mr-2 h-4 w-4" />
                    Eliminar
                  </Button>
                )}
-               <Button variant="outline" size="sm" onClick={handleCheckStatus} disabled={isRestarting || isStopping || isDeleting || isChecking}>
+               <Button variant="outline" size="sm" onClick={handleCheckStatus} disabled={checkDisabled}>
                  <RefreshCw className={`mr-2 h-4 w-4 ${isChecking ? "animate-spin" : ""}`} />
                  Verificar Estado
                </Button>

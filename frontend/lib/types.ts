@@ -25,7 +25,7 @@ export interface RegisteredUser {
 export interface Server {
   id: string
   name: string
-  status: "online" | "restarting" | "offline"
+  status: "online" | "restarting" | "offline" | "stopped"
 }
 
 // Action log entry for tracking user activities
