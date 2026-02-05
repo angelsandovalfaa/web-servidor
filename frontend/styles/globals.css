@@ -75,7 +75,7 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-plex-sans);
+  --font-sans: var(--font-open-sans);
   --font-mono: var(--font-plex-mono);
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -1,13 +1,13 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google"
+import { IBM_Plex_Mono, Open_Sans } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
-const plexSans = IBM_Plex_Sans({
+const openSans = Open_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
-  variable: "--font-plex-sans",
+  variable: "--font-open-sans",
 })
 const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
@@ -45,7 +45,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${plexSans.variable} ${plexMono.variable} font-sans antialiased`}>
+      <body className={`${openSans.variable} ${plexMono.variable} font-sans antialiased`}>
         {children}
         <Analytics />
       </body>
