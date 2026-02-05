@@ -35,6 +35,7 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
 
   const canRestart = canRestartServer(server.id)
   const canShutdown = canShutdownServer(server.id)
+  const isAdminUser = isAdmin()
   const isOffline = status === "offline"
   const isBusy = isRestarting || isStopping || isDeleting || isChecking
   const restartDisabled = isBusy || status === "stopped" || isOffline
@@ -149,21 +150,21 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
     switch (status) {
       case "online":
         return (
-          <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+          <Badge className="bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300">
             <CheckCircle className="mr-1 h-3 w-3" />
             En línea
           </Badge>
         )
       case "restarting":
         return (
-          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+          <Badge className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/10 dark:text-amber-300">
             <RotateCcw className="mr-1 h-3 w-3 animate-spin" />
             Reiniciando
           </Badge>
         )
       case "stopped":
         return (
-          <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+          <Badge className="bg-red-500/10 text-red-700 hover:bg-red-500/10 dark:text-red-300">
             <PowerOff className="mr-1 h-3 w-3" />
             Apagado
           </Badge>
@@ -175,57 +176,95 @@ export function ServerCard({ server, onRestartComplete, onDelete }: ServerCardPr
 
   return (
     <>
-      <Card className="transition-shadow hover:shadow-md">
+      <Card className="h-full border-border/70 bg-card/80 shadow-sm transition-shadow hover:shadow-md">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <ServerIcon className="h-5 w-5 text-primary" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ServerIcon className="h-5 w-5" />
               </div>
-              <CardTitle className="text-lg">{server.name}</CardTitle>
+              <div className="space-y-1">
+                <CardTitle className="text-lg tracking-tight">{server.name}</CardTitle>
+                <div className="inline-flex items-center gap-2 rounded-md bg-muted/60 px-2 py-1 text-xs font-mono text-muted-foreground">
+                  ID {server.id}
+                </div>
+              </div>
             </div>
             {getStatusBadge()}
           </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-muted-foreground">ID: {server.id}</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end">
-              {canRestart ? (
-                <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)} disabled={restartDisabled}>
+            <div className="space-y-2">
+              <div className="grid gap-2 rounded-xl border border-border/70 bg-background/60 p-2 [grid-template-columns:repeat(auto-fit,minmax(140px,1fr))]">
+                {canRestart ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsModalOpen(true)}
+                  disabled={restartDisabled}
+                  className="w-full justify-center"
+                >
                   <RotateCcw className={`mr-2 h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
                   Reiniciar
                 </Button>
               ) : (
-                <Button variant="outline" size="sm" disabled className="opacity-50 bg-transparent">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled
+                  className="w-full justify-center opacity-50 bg-transparent"
+                >
                   <Lock className="mr-2 h-4 w-4" />
                   Reiniciar
                 </Button>
               )}
               {canShutdown ? (
-                <Button variant="destructive" size="sm" onClick={() => setIsShutdownModalOpen(true)} disabled={shutdownDisabled}>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsShutdownModalOpen(true)}
+                  disabled={shutdownDisabled}
+                  className="w-full justify-center"
+                >
                   <PowerOff className={`mr-2 h-4 w-4 ${isStopping ? "animate-spin" : ""}`} />
                   Apagar
                 </Button>
               ) : (
-                <Button variant="destructive" size="sm" disabled className="opacity-50">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled
+                  className="w-full justify-center opacity-50"
+                >
                   <Lock className="mr-2 h-4 w-4" />
                   Apagar
                 </Button>
               )}
-               {isAdmin() && (
-                 <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(true)} disabled={deleteDisabled} className="text-red-600 hover:text-red-700">
-                   <Trash2 className="mr-2 h-4 w-4" />
-                   Eliminar
-                 </Button>
-               )}
-               <Button variant="outline" size="sm" onClick={handleCheckStatus} disabled={checkDisabled}>
-                 <RefreshCw className={`mr-2 h-4 w-4 ${isChecking ? "animate-spin" : ""}`} />
-                 Verificar Estado
-               </Button>
-             </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCheckStatus}
+                  disabled={checkDisabled}
+                  className="w-full justify-center"
+                >
+                  <RefreshCw className={`mr-2 h-4 w-4 ${isChecking ? "animate-spin" : ""}`} />
+                  Verificar Estado
+                </Button>
+                {isAdminUser && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    disabled={deleteDisabled}
+                    className="w-full justify-center text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -47,12 +47,12 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-          <Server className="h-6 w-6 text-primary-foreground" />
+    <Card className="w-full max-w-md border-border/70 bg-card/80 shadow-lg">
+      <CardHeader className="text-center space-y-2">
+        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Server className="h-6 w-6" />
         </div>
-        <CardTitle className="text-2xl">Panel de Servidores</CardTitle>
+        <CardTitle className="text-2xl tracking-tight">Panel de Servidores</CardTitle>
         <CardDescription>Ingrese sus credenciales para acceder al sistema</CardDescription>
       </CardHeader>
       <CardContent>
@@ -94,7 +94,7 @@ export function LoginForm() {
           {/* Error message display */}
           {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
-          <p className="text-xs text-muted-foreground text-center">Usuario admin por defecto: admin / admin123</p>
+          <p className="text-xs text-muted-foreground text-center font-mono">Usuario admin por defecto: admin / admin123</p>
 
           {/* Submit button */}
           <Button type="submit" className="w-full" disabled={isLoading}>

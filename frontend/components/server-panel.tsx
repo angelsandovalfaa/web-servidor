@@ -39,12 +39,16 @@ export function ServerPanel() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto max-w-6xl px-4 py-10 space-y-10">
       {/* Server Cards Section */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Servidores</h2>
-        <p className="text-muted-foreground mb-6">Gestione y reinicie los servidores del sistema</p>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="rounded-2xl border border-border/70 bg-card/70 p-6 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight">Servidores</h2>
+            <p className="text-muted-foreground">Gestione y reinicie los servidores del sistema</p>
+          </div>
+        </div>
+        <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {servers.map((server) => (
             <ServerCard key={server.id} server={server} onRestartComplete={handleRefresh} onDelete={handleRefresh} />
           ))}
@@ -52,7 +56,7 @@ export function ServerPanel() {
       </div>
 
       {!showAdminSection && currentUser && (
-        <div className="mt-8">
+        <div className="space-y-4">
           <ActionLogsTable
             refreshKey={refreshKey}
             filterByUser={currentUser.username}
@@ -64,9 +68,9 @@ export function ServerPanel() {
 
       {/* Admin Section - User Management and Logs */}
       {showAdminSection && (
-        <div className="mt-8">
+        <div className="rounded-2xl border border-border/70 bg-card/70 p-6 shadow-sm">
           <Tabs defaultValue="logs" className="w-full">
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 rounded-xl bg-muted/60 p-1">
               <TabsTrigger value="logs">Registro de Acciones</TabsTrigger>
               <TabsTrigger value="users">Gestión de Usuarios</TabsTrigger>
               <TabsTrigger value="servers">Gestión de Servidores</TabsTrigger>

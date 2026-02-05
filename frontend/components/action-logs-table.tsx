@@ -71,7 +71,7 @@ export function ActionLogsTable({
 
   const getRoleBadge = (role: ActionLog["userRole"]) => {
     return role === "admin" ? (
-      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Administrador</Badge>
+      <Badge className="bg-sky-500/10 text-sky-700 hover:bg-sky-500/10">Administrador</Badge>
     ) : (
       <Badge variant="secondary">Usuario Normal</Badge>
     )
@@ -114,11 +114,11 @@ export function ActionLogsTable({
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-            <ClipboardList className="h-5 w-5 text-blue-600" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <ClipboardList className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle>{title}</CardTitle>
+            <CardTitle className="tracking-tight">{title}</CardTitle>
             <p className="text-sm text-muted-foreground">{description}</p>
           </div>
         </div>
@@ -128,14 +128,26 @@ export function ActionLogsTable({
           <div className="text-center py-8 text-muted-foreground">No hay registros de acciones aún.</div>
         ) : (
           <>
-            <div className="rounded-md border">
+            <div className="rounded-md border border-border/70 bg-background/60">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {!filterByUser && <TableHead>Usuario</TableHead>}
-                    {!filterByUser && <TableHead>Tipo de Usuario</TableHead>}
-                    <TableHead>Acción</TableHead>
-                    <TableHead>Fecha y Hora</TableHead>
+                    {!filterByUser && (
+                      <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Usuario
+                      </TableHead>
+                    )}
+                    {!filterByUser && (
+                      <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Tipo de Usuario
+                      </TableHead>
+                    )}
+                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Acción
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Fecha y Hora
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

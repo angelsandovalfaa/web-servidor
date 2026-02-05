@@ -8,7 +8,7 @@ import { LoginForm } from "@/components/login-form"
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-muted to-background p-4">
+    <main className="min-h-screen flex items-center justify-center p-4 md:p-8">
       <LoginForm />
     </main>
   )

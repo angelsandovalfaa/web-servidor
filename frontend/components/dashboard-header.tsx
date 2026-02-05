@@ -24,23 +24,23 @@ export function DashboardHeader() {
   }
 
   return (
-    <header className="border-b bg-card">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
+    <header className="sticky top-0 z-20 border-b border-border/70 bg-card/80 backdrop-blur">
+      <div className="container mx-auto max-w-6xl px-4 py-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           {/* Logo and title */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Server className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Server className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Panel de Servidores</h1>
+              <h1 className="text-xl font-semibold tracking-tight">Panel de Servidores</h1>
               <p className="text-sm text-muted-foreground">Sistema de gestión y monitoreo</p>
             </div>
           </div>
 
           {/* User info and logout */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1.5">
               <User className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium">{user?.username}</span>
               <Badge variant={user?.role === "admin" ? "default" : "secondary"}>
