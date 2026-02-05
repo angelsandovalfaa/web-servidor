@@ -68,7 +68,7 @@ export function LoginForm() {
                 placeholder="Ingrese su usuario"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="pl-10"
+                className="pl-10 font-sans"
                 required
               />
             </div>
@@ -94,7 +94,7 @@ export function LoginForm() {
           {/* Error message display */}
           {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
-          <p className="text-xs text-muted-foreground text-center font-mono">Usuario admin por defecto: admin / admin123</p>
+          <p className="text-xs text-muted-foreground text-center">Usuario admin por defecto: admin / admin123</p>
 
           {/* Submit button */}
           <Button type="submit" className="w-full" disabled={isLoading}>
